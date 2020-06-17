@@ -1,0 +1,116 @@
+---
+title: "PML-Proj"
+author: "Anand"
+date: "6/17/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Practical Machine Learning
+# Course Project
+
+DATA PREPROCESSING 
+
+```{r}
+
+# required libraries
+library(caret)
+
+
+# read the training data into training data frame while excluding columns with NA, blank or division by zero
+training <- read.csv("c:\\Users\\Dell\\Documents\\pml-training.csv", na.strings = c("NA","","#DIV/0!"))
+
+# remove blank columns
+na_cols <- which(colSums(is.na(training)) > 0)
+training <- training[,-na_cols]
+
+# consider only those rows containing new_windows = 'no'
+training <- training[training$new_window=="no",]
+
+
+# read the test data into test_set data frame
+test_set <- read.csv("c:\\Users\\Dell\\Documents\\pml-testing.csv")
+
+# remove blank columns
+na_cols <- which(colSums(is.na(test_set)) > 0)
+test_set <- test_set[,-na_cols]
+
+# remove a few variables that do not seem to be predictors
+training <- training[,-c(1:7)]
+test_set <- test_set[,-c(1:7)]
+
+# size of training set
+dim(training)
+
+# size of test set 
+dim(test_set)
+
+
+# END OF DATA PREPROCESSING
+```
+
+DATA ANALYSIS USING MACHINE LEARNING TECHNIQUES
+
+It is mentioned in the course that random forest and AdaBoost are the most popular techniques. So, the random forest approach is used for classification in this project.
+
+
+```{r} 
+
+# set the seed value for replicability
+set.seed(455)
+
+# carate training and test sets from the training set given by coursera
+inTrain <- createDataPartition(training$classe, p=0.7, list=FALSE)
+new_train <- training[inTrain,]
+new_test  <- training[-inTrain,]
+
+modelRF <- train( classe ~ .,  method = "rf", ntree = 100, data = new_train )
+
+# try the model on the new_test set to check the accuracy
+predictions <- predict( modelRF, newdata = new_test )
+
+# confusion matrix
+confusionMatrix( predictions, new_test$classe)
+
+# error in classification. 
+classif_error <- (1 - mean(predictions == new_test$classe)) * 100
+
+# classification erro in percentage
+classif_error
+
+# END OF MODEL BUILDING
+```
+
+
+
+# PREDICTION ON THE TEST SET
+
+```{r}
+
+# Prediction on the actual testing dataset provided by coursera
+predictions_test_set <- predict(modelRF, newdata=test_set)
+
+# print the predictions for each problem ID in the test set
+predictions_test_set
+
+# examine the importance of variables
+varImp(modelRF)
+
+# examine the final model details
+modelRF$finalModel
+```
+
+
+
+CONCLUSION
+
+
+Using a random forest with 100 trees, the classification was attempted. An accuracy of 0.9929 was noticed. It was a lot higher than the "No Information Rate" of 0.2847. So, it could be considered a good model on the training set. A classification error of 0.7 % was noticed on the test set built out of training data. It could be considered as a validation set.
+
+On the test set provided by coursera, the following classifications were obtained:
+B A B A A E D B A A B C B A E E A B B B
+
+If the number of trees in the forest are increased and the mtry parameter is tweaked, the accuracy might improve further.
